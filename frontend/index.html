@@ -1,36 +1,174 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-  <title>Iris Classifier</title>
+  <meta charset="UTF-8">
+  <title>Iris Flower Predictor 🌸</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <link rel="stylesheet" href="styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      padding: 20px;
+      transition: background-color 0.5s ease;
+    }
+
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+
+    .input-group {
+      margin: 10px 0;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+    }
+
+    input[type="number"] {
+      padding: 8px;
+      width: 100%;
+      max-width: 300px;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 10px 20px;
+      background-color: #6200ea;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+    }
+
+    #predictionResult {
+      margin-top: 20px;
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    #predictionImage {
+      margin-top: 10px;
+      display: none;
+      width: 150px;
+      border-radius: 10px;
+    }
+  </style>
 </head>
 <body>
-  <h2>Iris Flower Predictor 🌸</h2>
-  <input id="sl" placeholder="Sepal Length">
-  <input id="sw" placeholder="Sepal Width">
-  <input id="pl" placeholder="Petal Length">
-  <input id="pw" placeholder="Petal Width">
-  <button onclick="predict()">Predict</button>
-  <h3 id="result"></h3>
+  <h1>Iris Flower Predictor 🌸</h1>
+
+  <div class="input-group">
+    <label>Sepal Length</label>
+    <input type="number" id="sepalLength" step="0.1">
+  </div>
+  <div class="input-group">
+    <label>Sepal Width</label>
+    <input type="number" id="sepalWidth" step="0.1">
+  </div>
+  <div class="input-group">
+    <label>Petal Length</label>
+    <input type="number" id="petalLength" step="0.1">
+  </div>
+  <div class="input-group">
+    <label>Petal Width</label>
+    <input type="number" id="petalWidth" step="0.1">
+  </div>
+
+  <button id="predictBtn">Predict</button>
+
+  <div id="predictionResult"></div>
+
+  <div id="predictionImageContainer">
+    <img id="predictionImage" src="" alt="">
+  </div>
+
+  <canvas id="comparisonChart" width="400" height="250" style="margin-top: 20px;"></canvas>
 
   <script>
-    async function predict() {
+    document.getElementById("predictBtn").addEventListener("click", async () => {
       const features = [
-        parseFloat(document.getElementById("sl").value),
-        parseFloat(document.getElementById("sw").value),
-        parseFloat(document.getElementById("pl").value),
-        parseFloat(document.getElementById("pw").value)
+        parseFloat(document.getElementById("sepalLength").value),
+        parseFloat(document.getElementById("sepalWidth").value),
+        parseFloat(document.getElementById("petalLength").value),
+        parseFloat(document.getElementById("petalWidth").value)
       ];
+
+      // Simple input validation
+      if (features.some(isNaN) || features.some(v => v < 0 || v > 15)) {
+        alert("Please enter valid numbers between 0 and 15.");
+        return;
+      }
 
       const response = await fetch("http://127.0.0.1:5000/predict", {
         method: "POST",
-        headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({features: features})
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ features })
       });
 
       const data = await response.json();
-      document.getElementById("result").innerText = "Prediction: " + data.prediction;
+      document.getElementById("predictionResult").innerText = "Prediction: " + data.prediction;
+      showChart(features);
+      updateVisuals(data.prediction);
+    });
+
+    function showChart(inputValues) {
+      const avgValues = [5.84, 3.05, 3.76, 1.20];
+      const ctx = document.getElementById('comparisonChart').getContext('2d');
+
+      if (window.myChart) {
+        window.myChart.destroy(); // clear previous chart
+      }
+
+      window.myChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: ['Sepal Length', 'Sepal Width', 'Petal Length', 'Petal Width'],
+          datasets: [
+            {
+              label: 'Your Input',
+              data: inputValues,
+              backgroundColor: 'rgba(54, 162, 235, 0.6)'
+            },
+            {
+              label: 'Average Iris',
+              data: avgValues,
+              backgroundColor: 'rgba(255, 99, 132, 0.6)'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            title: {
+              display: true,
+              text: 'Your Input vs Average Iris Flower',
+              font: { size: 16 }
+            }
+          }
+        }
+      });
+    }
+
+    function updateVisuals(prediction) {
+      const body = document.body;
+      const img = document.getElementById("predictionImage");
+
+      if (prediction === "setosa") {
+        body.style.backgroundColor = "#e0f7fa";
+        img.src = "setosa.jpg";
+      } else if (prediction === "versicolor") {
+        body.style.backgroundColor = "#e8f5e9";
+        img.src = "versicolor.jpg";
+      } else if (prediction === "virginica") {
+        body.style.backgroundColor = "#fce4ec";
+        img.src = "virginica.jpg";
+      }
+
+      img.style.display = "block";
     }
   </script>
 </body>
